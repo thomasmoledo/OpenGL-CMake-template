@@ -1,66 +1,74 @@
-cmake_minimum_required(VERSION 3.25)
+cmake_minimum_required(VERSION 3.20)
+project(MyProject LANGUAGES C CXX)
 
-project(OpenGLGame
-    VERSION 1.0
-    LANGUAGES C CXX
-)
-
-# --------------------------------------------------
-# C++ standard
-# --------------------------------------------------
-
-set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
-set(CMAKE_CXX_EXTENSIONS OFF)
 
-# --------------------------------------------------
-# SDL3
-# --------------------------------------------------
+set(SDL3IMAGE_VENDORED ON CACHE BOOL "" FORCE)
+set(SDL3MIXER_VENDORED ON CACHE BOOL "" FORCE)
+set(SDLIMAGE_TESTS OFF CACHE BOOL "" FORCE)
+set(SDLMIXER_TESTS OFF CACHE BOOL "" FORCE)
 
-add_subdirectory(
-    ${CMAKE_CURRENT_SOURCE_DIR}/external/SDL
-    ${CMAKE_CURRENT_BINARY_DIR}/SDL
-    EXCLUDE_FROM_ALL
+# Disable AVIF (avoids needing NASM for dav1d)
+set(SDLIMAGE_AVIF OFF CACHE BOOL "" FORCE)
+
+include(FetchContent)
+
+# --- SDL3 ---
+FetchContent_Declare(
+    SDL3
+    GIT_REPOSITORY https://github.com/libsdl-org/SDL.git
+    GIT_TAG release-3.4.16   # pin to a specific stable tag
+    GIT_SHALLOW TRUE
 )
 
-# --------------------------------------------------
-# GLAD2
-# --------------------------------------------------
-
-add_library(glad STATIC
-    external/glad/src/gl.c
+# --- SDL3_image ---
+FetchContent_Declare(
+    SDL3_image
+    GIT_REPOSITORY https://github.com/libsdl-org/SDL_image.git
+    GIT_TAG release-3.4.6
+    GIT_SHALLOW TRUE
 )
 
-target_include_directories(glad
-    PUBLIC
-        ${CMAKE_CURRENT_SOURCE_DIR}/external/glad/include
+# --- SDL3_mixer ---
+FetchContent_Declare(
+    SDL3_mixer
+    GIT_REPOSITORY https://github.com/libsdl-org/SDL_mixer.git
+    GIT_TAG release-3.2.4
+    GIT_SHALLOW TRUE
 )
 
-# --------------------------------------------------
-# Game executable
-# --------------------------------------------------
+# Options for the SDL satellite libs (set before MakeAvailable)
+set(SDL3IMAGE_VENDORED ON CACHE BOOL "" FORCE)
+set(SDL3MIXER_VENDORED ON CACHE BOOL "" FORCE)
+set(SDLIMAGE_TESTS OFF CACHE BOOL "" FORCE)
+set(SDLMIXER_TESTS OFF CACHE BOOL "" FORCE)
 
-add_executable(${PROJECT_NAME}
-    src/main.cpp
+FetchContent_MakeAvailable(SDL3 SDL3_image SDL3_mixer)
+
+# --- GLAD2 (locally generated, not fetched) ---
+add_library(glad STATIC external/glad/src/gl.c)
+target_include_directories(glad PUBLIC external/glad/include)
+
+# --- Your executable ---
+add_executable(MyProject src/main.cpp)
+
+target_link_libraries(MyProject PRIVATE
+    SDL3::SDL3
+    SDL3_image::SDL3_image
+    SDL3_mixer::SDL3_mixer
+    glad
+    opengl32
 )
 
-# --------------------------------------------------
-# Libraries
-# --------------------------------------------------
+target_include_directories(MyProject PRIVATE external/glad/include)
 
-target_link_libraries(${PROJECT_NAME}
-    PRIVATE
-        SDL3::SDL3
-        glad
-)
-
-# --------------------------------------------------
-# OpenGL
-# --------------------------------------------------
-
-if(WIN32)
-    target_link_libraries(${PROJECT_NAME}
-        PRIVATE
-            opengl32
+# Copy SDL3 DLLs next to the exe after build (Windows)
+if (WIN32)
+    add_custom_command(TARGET MyProject POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            $<TARGET_RUNTIME_DLLS:MyProject>
+            $<TARGET_FILE_DIR:MyProject>
+        COMMAND_EXPAND_LISTS
     )
 endif()

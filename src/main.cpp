@@ -1,154 +1,43 @@
-#include <iostream>
-
-#include <SDL3/SDL.h>
 #include <glad/gl.h>
+#include <SDL3/SDL.h>
+#include <SDL3_image/SDL_image.h>
+#include <SDL3_mixer/SDL_mixer.h>
+#include <cstdio>
 
-int main()
-{
-    // --------------------------------------------
-    // Initialize SDL
-    // --------------------------------------------
-
-    if (!SDL_Init(SDL_INIT_VIDEO))
-    {
-        std::cerr << "SDL_Init failed: "
-                  << SDL_GetError()
-                  << '\n';
-
+int main(int argc, char* argv[]) {
+    if (!SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO)) {
+        SDL_Log("SDL_Init failed: %s", SDL_GetError());
         return 1;
     }
 
-    // --------------------------------------------
-    // Request OpenGL 4.6 Core
-    // --------------------------------------------
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 4);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 6);
 
-    SDL_GL_SetAttribute(
-        SDL_GL_CONTEXT_MAJOR_VERSION,
-        4
-    );
+    SDL_Window* window = SDL_CreateWindow("SDL3 + GLAD2", 1280, 720,
+        SDL_WINDOW_OPENGL);
+    SDL_GLContext ctx = SDL_GL_CreateContext(window);
 
-    SDL_GL_SetAttribute(
-        SDL_GL_CONTEXT_MINOR_VERSION,
-        6
-    );
-
-    SDL_GL_SetAttribute(
-        SDL_GL_CONTEXT_PROFILE_MASK,
-        SDL_GL_CONTEXT_PROFILE_CORE
-    );
-
-    SDL_GL_SetAttribute(
-        SDL_GL_DOUBLEBUFFER,
-        1
-    );
-
-    // --------------------------------------------
-    // Create window
-    // --------------------------------------------
-
-    SDL_Window* window = SDL_CreateWindow(
-        "OpenGL + SDL3 + GLAD2",
-        1280,
-        720,
-        SDL_WINDOW_OPENGL
-    );
-
-    if (!window)
-    {
-        std::cerr << "SDL_CreateWindow failed: "
-                  << SDL_GetError()
-                  << '\n';
-
-        SDL_Quit();
+    if (!gladLoadGL((GLADloadfunc)SDL_GL_GetProcAddress)) {
+        SDL_Log("Failed to initialize GLAD");
         return 1;
     }
 
-    // --------------------------------------------
-    // Create OpenGL context
-    // --------------------------------------------
-
-    SDL_GLContext context =
-        SDL_GL_CreateContext(window);
-
-    if (!context)
-    {
-        std::cerr << "SDL_GL_CreateContext failed: "
-                  << SDL_GetError()
-                  << '\n';
-
-        SDL_DestroyWindow(window);
-        SDL_Quit();
-
-        return 1;
-    }
-
-    // --------------------------------------------
-    // Load OpenGL functions with GLAD2
-    // --------------------------------------------
-
-    int version = gladLoadGL(
-        reinterpret_cast<GLADloadfunc>(
-            SDL_GL_GetProcAddress
-        )
-    );
-
-    if (version == 0)
-    {
-        std::cerr << "Failed to initialize GLAD2\n";
-
-        SDL_GL_DestroyContext(context);
-        SDL_DestroyWindow(window);
-        SDL_Quit();
-
-        return 1;
-    }
-
-    std::cout
-        << "Loaded OpenGL "
-        << GLAD_VERSION_MAJOR(version)
-        << "."
-        << GLAD_VERSION_MINOR(version)
-        << '\n';
-
-    // --------------------------------------------
-    // Main loop
-    // --------------------------------------------
+    printf("OpenGL loaded: %s\n", glGetString(GL_VERSION));
 
     bool running = true;
-
-    while (running)
-    {
-        SDL_Event event;
-
-        while (SDL_PollEvent(&event))
-        {
-            if (event.type == SDL_EVENT_QUIT)
-            {
-                running = false;
-            }
+    while (running) {
+        SDL_Event e;
+        while (SDL_PollEvent(&e)) {
+            if (e.type == SDL_EVENT_QUIT) running = false;
         }
-
-        // Clear screen
-        glClearColor(
-            0.1f,
-            0.1f,
-            0.15f,
-            1.0f
-        );
-
+        glClearColor(0.1f, 0.1f, 0.15f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT);
-
-        // Swap buffers
         SDL_GL_SwapWindow(window);
     }
 
-    // --------------------------------------------
-    // Cleanup
-    // --------------------------------------------
-
-    SDL_GL_DestroyContext(context);
+    SDL_GL_DestroyContext(ctx);
     SDL_DestroyWindow(window);
     SDL_Quit();
-
     return 0;
 }

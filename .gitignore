@@ -1,19 +1,57 @@
-# CMake
+# ---- CMake build output ----
 build/
+out/
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+CTestTestfile.cmake
+_deps/
+CMakeUserPresets.json
 
-# Visual Studio
+# ---- Visual Studio ----
 .vs/
-*.user
+*.sln
+*.vcxproj
+*.vcxproj.filters
+*.vcxproj.user
 *.suo
+*.user
+*.userosscache
+*.sdf
+*.opensdf
+*.VC.db
+*.VC.VC.opendb
 
-# Build artifacts
-Debug/
-Release/
-x64/
-x86/
+# ---- Ninja ----
+.ninja_deps
+.ninja_log
+build.ninja
+rules.ninja
 
-# Compiled binaries
+# ---- Compiled binaries ----
+*.obj
+*.o
 *.exe
 *.dll
 *.lib
-*.obj
+*.pdb
+*.ilk
+*.exp
+*.a
+*.so
+*.dylib
+
+# ---- OS junk ----
+Thumbs.db
+Desktop.ini
+.DS_Store
+
+# ---- Editor / IDE ----
+.vscode/
+*.swp
+*~
+
+# ---- Logs / misc ----
+*.log
+*.tlog
+*.idb
