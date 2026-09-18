@@ -4,14 +4,6 @@ project(MyProject LANGUAGES C CXX)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-set(SDL3IMAGE_VENDORED ON CACHE BOOL "" FORCE)
-set(SDL3MIXER_VENDORED ON CACHE BOOL "" FORCE)
-set(SDLIMAGE_TESTS OFF CACHE BOOL "" FORCE)
-set(SDLMIXER_TESTS OFF CACHE BOOL "" FORCE)
-
-# Disable AVIF (avoids needing NASM for dav1d)
-set(SDLIMAGE_AVIF OFF CACHE BOOL "" FORCE)
-
 include(FetchContent)
 
 # --- SDL3 ---
@@ -44,11 +36,21 @@ set(SDL3MIXER_VENDORED ON CACHE BOOL "" FORCE)
 set(SDLIMAGE_TESTS OFF CACHE BOOL "" FORCE)
 set(SDLMIXER_TESTS OFF CACHE BOOL "" FORCE)
 
+# AVIF support pulls in dav1d, which needs a NASM assembler on Windows.
+# Disabled by default so the project builds with no extra tools installed.
+set(SDLIMAGE_AVIF OFF CACHE BOOL "" FORCE)
+
 FetchContent_MakeAvailable(SDL3 SDL3_image SDL3_mixer)
 
 # --- GLAD2 (locally generated, not fetched) ---
 add_library(glad STATIC external/glad/src/gl.c)
 target_include_directories(glad PUBLIC external/glad/include)
+
+# --- OpenGL ---
+# find_package(OpenGL) resolves to the correct system GL library on
+# Windows (opengl32), Linux (libGL), and macOS (OpenGL.framework),
+# so linking OpenGL::GL works everywhere without platform-specific names.
+find_package(OpenGL REQUIRED)
 
 # --- Your executable ---
 add_executable(MyProject src/main.cpp)
@@ -58,12 +60,20 @@ target_link_libraries(MyProject PRIVATE
     SDL3_image::SDL3_image
     SDL3_mixer::SDL3_mixer
     glad
-    opengl32
+    OpenGL::GL
 )
 
 target_include_directories(MyProject PRIVATE external/glad/include)
 
-# Copy SDL3 DLLs next to the exe after build (Windows)
+# macOS caps out at OpenGL 4.1 core and Apple has deprecated the API
+# (it still works, just no driver updates past 4.1). Silence the
+# deprecation warnings that OpenGL headers emit on macOS.
+if (APPLE)
+    target_compile_definitions(MyProject PRIVATE GL_SILENCE_DEPRECATION)
+endif()
+
+# Copy SDL3 DLLs next to the exe after build (Windows only —
+# macOS/Linux resolve shared libraries via rpath automatically).
 if (WIN32)
     add_custom_command(TARGET MyProject POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E copy_if_different
