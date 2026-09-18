@@ -1,0 +1,19 @@
+# CMake
+build/
+
+# Visual Studio
+.vs/
+*.user
+*.suo
+
+# Build artifacts
+Debug/
+Release/
+x64/
+x86/
+
+# Compiled binaries
+*.exe
+*.dll
+*.lib
+*.obj
