@@ -58,6 +58,13 @@ FetchContent_MakeAvailable(SDL3 SDL3_image SDL3_mixer glm)
 add_library(glad STATIC external/glad/src/gl.c)
 target_include_directories(glad PUBLIC external/glad/include)
 
+# --- ShaderProgram ---
+add_library(shaderProgram STATIC src/ShaderProgram.cpp)
+target_include_directories(shaderProgram PUBLIC src)
+target_link_libraries(shaderProgram PUBLIC glad)
+target_link_libraries(shaderProgram PUBLIC SDL3::SDL3)
+target_link_libraries(shaderProgram PUBLIC glm::glm)
+
 # --- OpenGL ---
 # find_package(OpenGL) resolves to the correct system GL library on
 # Windows (opengl32), Linux (libGL), and macOS (OpenGL.framework),
@@ -71,12 +78,20 @@ target_link_libraries(main PRIVATE
     SDL3::SDL3
     SDL3_image::SDL3_image
     SDL3_mixer::SDL3_mixer
-    glad
-    OpenGL::GL
     glm::glm
+    glad
+    shaderProgram
+    OpenGL::GL
 )
 
-target_include_directories(main PRIVATE external/glad/include)
+# Copy shader files next to the executable so relative paths like
+# "shaders/vertex.glsl" resolve correctly at runtime, regardless of
+# the working directory the exe is launched from.
+add_custom_command(TARGET main POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+        ${CMAKE_SOURCE_DIR}/src/shaders
+        $<TARGET_FILE_DIR:main>/shaders
+)
 
 # macOS caps out at OpenGL 4.1 core and Apple has deprecated the API
 # (it still works, just no driver updates past 4.1). Silence the
