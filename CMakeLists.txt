@@ -84,6 +84,9 @@ target_link_libraries(main PRIVATE
     OpenGL::GL
 )
 
+# --- Main ---
+target_include_directories(main PRIVATE src)
+
 # Copy shader files next to the executable so relative paths like
 # "shaders/vertex.glsl" resolve correctly at runtime, regardless of
 # the working directory the exe is launched from.
@@ -91,6 +94,13 @@ add_custom_command(TARGET main POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_directory
         ${CMAKE_SOURCE_DIR}/src/shaders
         $<TARGET_FILE_DIR:main>/shaders
+)
+
+# images
+add_custom_command(TARGET main POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+        ${CMAKE_SOURCE_DIR}/src/images
+        $<TARGET_FILE_DIR:main>/images
 )
 
 # macOS caps out at OpenGL 4.1 core and Apple has deprecated the API
